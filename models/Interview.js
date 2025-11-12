@@ -6,7 +6,10 @@ const InterviewSchema = new mongoose.Schema(
     applicationDate: { type: Date },
     fullName: { type: String, required: true },
     position: { type: String },
-    startDate: { type: Date },
+    startDate: {
+      type: String, // 🟢 صار نص بدل تاريخ
+      trim: true,
+    },
 
     // ✅ المعلومات الشخصية
     dob: { type: Date },

@@ -165,7 +165,7 @@ export default function Header({ onLogout }) {
                           />
                         )}
 
-
+                         {role === "admin" && (
                           <MenuItem
                             onClick={() => {
                               setMenuOpen(false);
@@ -174,6 +174,7 @@ export default function Header({ onLogout }) {
                             icon={<BiSolidReport className="text-gray-200" />}
                             label="Reports"
                           />
+                        )}
 
                         <MenuItem
                           onClick={handleLogout}

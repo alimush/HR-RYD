@@ -10,9 +10,16 @@ import {
   FaInfoCircle,
   FaCheckCircle,
   FaTimesCircle,
+  FaPrint
 } from "react-icons/fa";
 import { motion, AnimatePresence } from "framer-motion";
 import Select from "react-select";
+import { useRouter } from "next/navigation";
+import generatePDF from "@/app/utils/generatePDF";
+import Image from "next/image";
+import PrintForm from "@/app/print/PrintForm";
+import { createRoot } from "react-dom/client";
+
 
 
 export default function ReportsPage() {
@@ -20,6 +27,7 @@ export default function ReportsPage() {
   const [filtered, setFiltered] = useState([]);
   const [selected, setSelected] = useState(null);
   const [role, setRole] = useState(""); // 🟢 الشركة (من localStorage)
+  const router = useRouter();
 
   // فلاتر
   const [filterName, setFilterName] = useState(null);
@@ -27,6 +35,17 @@ export default function ReportsPage() {
   const [filterDateFrom, setFilterDateFrom] = useState("");
   const [filterDateTo, setFilterDateTo] = useState("");
   const [filterCompany, setFilterCompany] = useState(null);
+  useEffect(() => {
+  if (typeof window !== "undefined") {
+    const r = localStorage.getItem("role");
+    setRole(r);
+
+    // 🛑 إذا مو admin رجعه للهوم
+    if (r !== "admin") {
+      router.replace("/home");
+    }
+  }
+}, [router]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -116,6 +135,29 @@ const companyOptions = [
   { value: "SV", label: "SV" },
   { value: "SVC", label: "SVC" },
 ];
+
+const handlePrint = () => {
+  if (!selected) return alert("❌ لا يوجد طلب محدد للطباعة");
+
+  // إنشاء div مؤقت للطباعة
+  const printContainer = document.createElement("div");
+  printContainer.id = "printable-form"; // ✅ نستخدم نفس الـ id
+  document.body.appendChild(printContainer);
+
+  const root = createRoot(printContainer);
+  root.render(<PrintForm data={selected} />);
+
+  setTimeout(() => {
+    window.print();
+    root.unmount();
+    document.body.removeChild(printContainer);
+  }, 500);
+};
+const companyLogos = {
+  RYD: "/ryd.png",
+  SV: "/sv.png",
+  SVC: "/svc.png",
+};
   return (
     <div className="p-6 min-h-screen bg-gray-100">
     <h1 className="text-3xl font-bold mb-6">
@@ -245,10 +287,8 @@ const companyOptions = [
                 <td className="p-2 border">{app.gender || "-"}</td>
                 <td className="p-2 border">{app.position || "-"}</td>
                 <td className="p-2 border">
-                  {app.startDate
-                    ? new Date(app.startDate).toLocaleDateString()
-                    : "-"}
-                </td>
+  {app.startDate || "-"}
+</td>
                 <td className="p-2 border">{app.maritalStatus || "-"}</td>
                 <td className="p-2 border">{app.kids ?? "-"}</td>
                 <td className="p-2 border">{app.address || "-"}</td>
@@ -267,18 +307,19 @@ const companyOptions = [
       <AnimatePresence>
         {selected && (
           <motion.div
-            className="fixed inset-0 bg-black/20 flex items-center justify-center z-50"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={() => setSelected(null)}
-          >
+          className="fixed inset-0 bg-black/30 flex items-center justify-center z-50"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+        >
             <motion.div
               className="bg-white rounded-2xl shadow-2xl p-8 max-w-5xl w-full relative overflow-y-auto max-h-[90vh]"
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
               onClick={(e) => e.stopPropagation()}
+              id="printable-popup"
+              
             >
               {/* Close */}
               <button
@@ -287,11 +328,43 @@ const companyOptions = [
               >
                 ✖
               </button>
+              <div className="absolute top-4 left-4 flex gap-2 no-print">
+  {/* زر الطباعة */}
+  <button
+  onClick={handlePrint}
+  className="no-print flex items-center gap-2 bg-gradient-to-r from-blue-600 to-blue-800 text-white px-4 py-2 rounded-lg shadow-md hover:scale-105 hover:shadow-lg transition-transform duration-200"
+>
+  <FaPrint className="text-white text-lg" />
+  <span className="font-medium">Print</span>
+</button>
+  {/* زر تحميل PDF */}
+  {/* <button
+    onClick={() =>
+      generatePDF("printable-popup", `${selected?.fullName || "document"}.pdf`)
+    }
+    className="bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700"
+  >
+    تحميل PDF
+  </button> */}
+</div>
+<h2 className="text-2xl font-bold mb-32 text-center border-b pb-3 flex items-center justify-center gap-4">
+  {/* أيقونة الملف */}
+  <FaFileAlt className="text-gray-700 text-2xl" />
 
-              <h2 className="text-2xl font-bold mb-6 text-center border-b pb-3">
-                <FaFileAlt className="inline-block mr-2 text-gray-700" />
-                تفاصيل الطلب – {selected.fullName}
-              </h2>
+  {/* النص */}
+  <span>تفاصيل الطلب – {selected.fullName}</span>
+
+  {/* لوغو الشركة */}
+  {selected.company && companyLogos[selected.company] && (
+    <Image
+      src={companyLogos[selected.company]}
+      alt={`${selected.company} logo`}
+      width={100}   // 🔹 عرض أكبر
+      height={80}  // 🔹 ارتفاع أكبر
+      className="inline-block"
+    />
+  )}
+</h2>
 
               {/* Application Info */}
               <section className="mb-6 border-b pb-4">
@@ -312,11 +385,8 @@ const companyOptions = [
                     <b>Position:</b> {selected.position || "-"}
                   </p>
                   <p>
-                    <b>Start Date:</b>{" "}
-                    {selected.startDate
-                      ? new Date(selected.startDate).toLocaleDateString()
-                      : "-"}
-                  </p>
+  <b>Start Date:</b> {selected.startDate || "-"}
+</p>
                 </div>
               </section>
 
@@ -560,11 +630,26 @@ const companyOptions = [
     : "-"}
 </p>
                 </div>
+              
               </section>
+
+              <div
+  id="print-footer"
+  className="flex items-center justify-center gap-2 text-gray-600 mt-32 text-sm"
+>
+  <span>© 2025</span>
+  <img
+    src="/SPC.png"
+    alt="SPC Logo"
+    className="w-10 h-5 inline-block"   // ← حجم صغير (20px × 20px)
+  />
+  <span>– All Rights Reserved</span>
+</div>
             </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
+      
     </div>
   );
 }

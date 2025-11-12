@@ -194,15 +194,16 @@ export default function InterviewPage({company}) {
 
             </label>
             <label className="flex flex-col font-medium text-gray-700">
-              Able to start the job on / متاح للبدء بالعمل في
-              <motion.input
-  type="date"
-  className="border p-2 rounded-md"
-  value={formData.startDate}
-  onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
-  {...focusAnim}
-/>
-            </label>
+  Able to start the job on / متاح للبدء بالعمل في
+  <motion.input
+    type="text"
+    placeholder=""
+    className="border p-2 rounded-md"
+    value={formData.startDate}
+    onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
+    {...focusAnim}
+  />
+</label>
           </motion.div>
         </section>
 
