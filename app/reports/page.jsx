@@ -255,54 +255,114 @@ const companyLogos = {
         </button>
       </div>
 
-      {/* جدول */}
-      <div className="overflow-x-auto bg-white shadow rounded-xl">
-        <table className="w-full border-collapse">
-          <thead className="bg-gray-200 text-gray-700 text-lg">
-            <tr>
-              <th className="p-3 border">Application Date</th>
-              <th className="p-3 border">Full Name</th>
-              <th className="p-3 border">Gender</th>
-              <th className="p-3 border">Position</th>
-              <th className="p-3 border">Start Date</th>
-              <th className="p-3 border">Marital Status</th>
-              <th className="p-3 border">Kids</th>
-              <th className="p-3 border">Address</th>
-              <th className="p-3 border">Expected Salary</th>
-            </tr>
-          </thead>
-          <tbody className="text-base">
-            {filtered.map((app) => (
-              <tr
-                key={app._id}
-                onClick={() => setSelected(app)}
-                className="cursor-pointer hover:bg-gray-100"
-              >
-                <td className="p-2 border">
-                  {app.applicationDate
-                    ? new Date(app.applicationDate).toLocaleDateString()
-                    : "-"}
-                </td>
-                <td className="p-2 border">{app.fullName || "-"}</td>
-                <td className="p-2 border">{app.gender || "-"}</td>
-                <td className="p-2 border">{app.position || "-"}</td>
-                <td className="p-2 border">
-  {app.startDate || "-"}
-</td>
-                <td className="p-2 border">{app.maritalStatus || "-"}</td>
-                <td className="p-2 border">{app.kids ?? "-"}</td>
-                <td className="p-2 border">{app.address || "-"}</td>
-                <td className="p-2 border">
-                  {app.otherInfo?.expectedSalary
-                    ? app.otherInfo.expectedSalary.toLocaleString()
-                    : "-"}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+     {/* جدول */}
+{filtered.length === 0 ? (
+  // 🌀 Spinner بنفس ألوان البرنامج (رمادي محايد)
+  <motion.div
+    className="flex flex-col items-center justify-center py-20 bg-white shadow-xl rounded-2xl border border-gray-200"
+    initial={{ opacity: 0 }}
+    animate={{ opacity: 1 }}
+  >
+    <div className="relative w-14 h-14 mb-5">
+      <div className="absolute inset-0 border-4 border-gray-300 rounded-full"></div>
+      <div className="absolute inset-0 border-4 border-t-gray-600 rounded-full animate-spin"></div>
+    </div>
+    <p className="text-gray-600 text-lg font-semibold tracking-wide">
+      Loading applications...
+    </p>
+  </motion.div>
+) : (
+  <motion.div
+    className="overflow-x-auto bg-white shadow-2xl rounded-2xl border border-gray-200"
+    initial={{ opacity: 0, y: 25 }}
+    animate={{ opacity: 1, y: 0 }}
+    transition={{ duration: 0.6, type: "spring", stiffness: 80 }}
+  >
+    <motion.table
+      className="w-full border-collapse text-gray-800"
+      initial="hidden"
+      animate="visible"
+      variants={{
+        visible: {
+          transition: { staggerChildren: 0.05 },
+        },
+      }}
+    >
+      <thead className="bg-gradient-to-r from-gray-50 via-gray-100 to-gray-200 text-gray-700 text-lg border-b border-gray-300">
+        <tr>
+          {[
+            "Application Date",
+            "Full Name",
+            "Gender",
+            "Position",
+            "Start Date",
+            "Marital Status",
+            "Kids",
+            "Address",
+            "Expected Salary",
+          ].map((head, i) => (
+            <th
+              key={i}
+              className="p-4 font-semibold text-left border-x border-gray-200 first:rounded-tl-2xl last:rounded-tr-2xl"
+            >
+              {head}
+            </th>
+          ))}
+        </tr>
+      </thead>
 
+      <motion.tbody
+        variants={{
+          hidden: {},
+          visible: {
+            transition: { staggerChildren: 0.04 },
+          },
+        }}
+        className="text-base divide-y divide-gray-100"
+      >
+        {filtered.map((app, index) => (
+          <motion.tr
+            key={app._id || index}
+            onClick={() => setSelected(app)}
+            className="cursor-pointer hover:bg-gray-50 transition-colors duration-200"
+            variants={{
+              hidden: { opacity: 0, y: 10 },
+              visible: { opacity: 1, y: 0 },
+            }}
+          >
+            <td className="p-4 border-x border-gray-100 text-gray-700">
+              {app.applicationDate
+                ? new Date(app.applicationDate).toLocaleDateString()
+                : "-"}
+            </td>
+            <td className="p-4 border-x border-gray-100 font-semibold text-gray-800">
+              {app.fullName || "-"}
+            </td>
+            <td className="p-4 border-x border-gray-100">{app.gender || "-"}</td>
+            <td className="p-4 border-x border-gray-100">{app.position || "-"}</td>
+            <td className="p-4 border-x border-gray-100">{app.startDate || "-"}</td>
+            <td className="p-4 border-x border-gray-100">{app.maritalStatus || "-"}</td>
+            <td className="p-4 border-x border-gray-100 text-center">{app.kids ?? "-"}</td>
+            <td className="p-4 border-x border-gray-100">{app.address || "-"}</td>
+            <td className="p-4 border-x border-gray-100 font-semibold text-gray-700 text-right">
+              {app.otherInfo?.expectedSalary
+                ? app.otherInfo.expectedSalary.toLocaleString()
+                : "-"}
+            </td>
+          </motion.tr>
+        ))}
+      </motion.tbody>
+    </motion.table>
+
+    {/* 🧭 أسفل الجدول */}
+    <div className="p-4 bg-gray-50 border-t border-gray-200 text-gray-600 text-sm flex justify-between items-center rounded-b-2xl">
+      <span>
+        Showing <b>{filtered.length}</b> applications
+      </span>
+      <span className="text-gray-400">Updated automatically</span>
+    </div>
+  </motion.div>
+)}
       {/* Popup */}
       <AnimatePresence>
         {selected && (
@@ -332,7 +392,7 @@ const companyLogos = {
   {/* زر الطباعة */}
   <button
   onClick={handlePrint}
-  className="no-print flex items-center gap-2 bg-gradient-to-r from-blue-600 to-blue-800 text-white px-4 py-2 rounded-lg shadow-md hover:scale-105 hover:shadow-lg transition-transform duration-200"
+  className="no-print flex items-center gap-2 bg-gradient-to-r from-gray-600 via-gray-700 to-gray-800 text-white px-4 py-2 rounded-lg shadow-md hover:scale-105 hover:shadow-lg transition-transform duration-200"
 >
   <FaPrint className="text-white text-lg" />
   <span className="font-medium">Print</span>
