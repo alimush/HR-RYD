@@ -10,17 +10,17 @@ import {
   FaInfoCircle,
   FaCheckCircle,
   FaTimesCircle,
-  FaPrint
+  FaPrint,FaInbox, FaSearchMinus, FaClipboardList
 } from "react-icons/fa";
 import { motion, AnimatePresence } from "framer-motion";
 import Select from "react-select";
 import { useRouter } from "next/navigation";
-import generatePDF from "@/app/utils/generatePDF";
+
 import Image from "next/image";
 import PrintForm from "@/app/print/PrintForm";
 import { createRoot } from "react-dom/client";
 
-
+import generateApplicationPDF from "@/app/utils/generateApplicationPDF";
 
 export default function ReportsPage() {
   const [interviews, setInterviews] = useState([]);
@@ -35,6 +35,7 @@ export default function ReportsPage() {
   const [filterDateFrom, setFilterDateFrom] = useState("");
   const [filterDateTo, setFilterDateTo] = useState("");
   const [filterCompany, setFilterCompany] = useState(null);
+  const [loading, setLoading] = useState(true);
   useEffect(() => {
   if (typeof window !== "undefined") {
     const r = localStorage.getItem("role");
@@ -47,30 +48,29 @@ export default function ReportsPage() {
   }
 }, [router]);
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const r = localStorage.getItem("role");
-        if (!r) {
-          console.warn("⚠️ No role found for current user");
-          return;
-        }
-  
-        setRole(r); // 🟢 نخزن الشركة بالـ state
-  
-        // 🟢 نبعث role بالـ query للـ API
-        const res = await fetch(`/api/reports?role=${r}`);
-        const data = await res.json();
-        if (data.success) {
-          setInterviews(data.data);
-          setFiltered(data.data);
-        }
-      } catch (err) {
-        console.error("❌ Error fetching reports:", err);
+useEffect(() => {
+  const fetchData = async () => {
+    try {
+      const r = localStorage.getItem("role");
+      if (!r) return;
+
+      setRole(r);
+      const res = await fetch(`/api/reports?role=${r}`);
+      const data = await res.json();
+
+      if (data.success) {
+        setInterviews(data.data);
+        setFiltered(data.data);
       }
-    };
-    fetchData();
-  }, []);
+    } catch (err) {
+      console.error("❌ Error fetching reports:", err);
+    } finally {
+      setLoading(false); // 🟢 توقف اللودينغ بعد الانتهاء
+    }
+  };
+
+  fetchData();
+}, []);
   // تطبيق الفلاتر
   useEffect(() => {
     let result = [...interviews];
@@ -160,14 +160,20 @@ const companyLogos = {
 };
   return (
     <div className="p-6 min-h-screen bg-gray-100">
-    <h1 className="text-3xl font-bold mb-6">
-  📋 Job Applications Report{" "}
+ <h1 className="text-3xl font-bold mb-6 flex items-center gap-3 text-gray-800">
+  {/* Icon */}
+  <FaClipboardList className="text-gray-700 text-4xl" />
+
+  {/* Title */}
+  <span>Job Applications Report</span>
+
+  {/* Role Text */}
   {role && (
-    <span className="text-gray-600">
+    <span className="text-gray-600 text-xl mt-1">
       – {role === "admin" ? "All Companies" : role.toUpperCase()}
     </span>
   )}
-</h1> 
+</h1>
       {/* 🔎 الفلاتر */}
       <div className="bg-white shadow rounded-xl p-4 mb-6 flex flex-wrap gap-4 items-end">
       {/* {role === "admin" && (
@@ -254,10 +260,8 @@ const companyLogos = {
           Reset Filters
         </button>
       </div>
-
-     {/* جدول */}
-{filtered.length === 0 ? (
-  // 🌀 Spinner بنفس ألوان البرنامج (رمادي محايد)
+      {loading ? (
+  // 🌀 Loader
   <motion.div
     className="flex flex-col items-center justify-center py-20 bg-white shadow-xl rounded-2xl border border-gray-200"
     initial={{ opacity: 0 }}
@@ -271,7 +275,38 @@ const companyLogos = {
       Loading applications...
     </p>
   </motion.div>
+) : interviews.length === 0 ? (
+  // ❌ لا توجد بيانات
+  <motion.div
+    className="flex flex-col items-center justify-center py-20 bg-white rounded-2xl shadow-xl border border-gray-200 text-center"
+    initial={{ opacity: 0 }}
+    animate={{ opacity: 1 }}
+  >
+    <FaInbox className="text-gray-500 text-5xl mb-4" />
+    <p className="text-gray-700 text-2xl font-semibold">
+      لا توجد بيانات
+    </p>
+    <p className="text-gray-500 mt-2">
+      لم يتم العثور على أي طلبات لغاية الآن
+    </p>
+  </motion.div>
+) : filtered.length === 0 ? (
+  // ⚠️ الفلاتر ما جابت نتيجة
+  <motion.div
+    className="flex flex-col items-center justify-center py-20 bg-white rounded-2xl shadow-xl border border-gray-200 text-center"
+    initial={{ opacity: 0 }}
+    animate={{ opacity: 1 }}
+  >
+    <FaSearchMinus className="text-gray-500 text-5xl mb-4" />
+    <p className="text-gray-700 text-2xl font-semibold">
+      لا توجد نتائج مطابقة
+    </p>
+    <p className="text-gray-500 mt-2">
+      حاول تعديل الفلاتر للحصول على نتائج
+    </p>
+  </motion.div>
 ) : (
+  // ✅ جدول البيانات
   <motion.div
     className="overflow-x-auto bg-white shadow-2xl rounded-2xl border border-gray-200"
     initial={{ opacity: 0, y: 25 }}
@@ -390,13 +425,14 @@ const companyLogos = {
               </button>
               <div className="absolute top-4 left-4 flex gap-2 no-print">
   {/* زر الطباعة */}
-  <button
+   <button
   onClick={handlePrint}
   className="no-print flex items-center gap-2 bg-gradient-to-r from-gray-600 via-gray-700 to-gray-800 text-white px-4 py-2 rounded-lg shadow-md hover:scale-105 hover:shadow-lg transition-transform duration-200"
 >
   <FaPrint className="text-white text-lg" />
   <span className="font-medium">Print</span>
-</button>
+</button> 
+
   {/* زر تحميل PDF */}
   {/* <button
     onClick={() =>
