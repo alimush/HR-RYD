@@ -25,7 +25,7 @@ export default function InterviewPage({company}) {
       });
   
       if (res.ok) {
-        alert("✅ Data saved to MongoDB!");
+        alert("✅ Data saved successfully!");
         setFormData({
           applicationDate: "",
           fullName: "",
