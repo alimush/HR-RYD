@@ -20,7 +20,6 @@ import Image from "next/image";
 import PrintForm from "@/app/print/PrintForm";
 import { createRoot } from "react-dom/client";
 
-import generateApplicationPDF from "@/app/utils/generateApplicationPDF";
 
 export default function ReportsPage() {
   const [interviews, setInterviews] = useState([]);
