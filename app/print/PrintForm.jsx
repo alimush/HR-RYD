@@ -261,12 +261,15 @@ export default function PrintForm({ data }) {
               </p>
             ))}
 
-            <p>
-              <b>Expected Salary:</b>{" "}
-              {data.otherInfo?.expectedSalary
-                ? Number(data.otherInfo.expectedSalary).toLocaleString()
-                : "-"}
-            </p>
+<p>
+  <b>Expected Salary:</b>{" "}
+  {data.otherInfo?.expectedSalary
+    ? Number(data.otherInfo.expectedSalary).toLocaleString()
+    : "-"}{" "}
+  <span className="text-gray-600">
+    {data.otherInfo?.currency ? `${data.otherInfo.currency}` : ""}
+  </span>
+</p>
           </div>
         </section>
       </main>

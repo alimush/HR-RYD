@@ -77,39 +77,36 @@ export default function HomePage() {
   initial="hidden"
   animate="show"
 >
-  {visibleCards.map((c, idx) => (
-    <Link key={idx} href={`/requests/${c.key}`} passHref>
-     <motion.div
-  variants={item}
-  whileHover={{ scale: 1.03, y: -5 }}
-  transition={{ duration: 0.15, ease: "easeOut" }}
-  className="group relative cursor-pointer rounded-2xl p-6
-             border border-gray-200 bg-white/70
-             backdrop-blur-md shadow-md hover:shadow-xl
-             ring-1 ring-gray-200/50 hover:ring-2 hover:ring-gray-300/70
-             transition-all duration-300 text-center flex flex-col items-center
-             px-24 py-10 m-12"
->
-        {/* اللوغو */}
-        <div
-          className="relative w-20 h-20 rounded-2xl bg-white/90 
-                     border border-gray-200 shadow-sm overflow-hidden"
-        >
-          <Image
-            src={c.logo}
-            alt={`${c.name} logo`}
-            fill
-            className="object-contain p-1 transition-transform duration-500 group-hover:scale-105"
-          />
-        </div>
+{visibleCards.map((c, idx) => (
+  <Link key={idx} href={`/requests/${c.key}`} passHref>
+    <motion.div
+      variants={item}
+      whileHover={{ scale: 1.05, y: -5 }}
+      transition={{ duration: 0.2, ease: "easeOut" }}
+      className="group relative cursor-pointer rounded-2xl
+                 border border-gray-200 bg-white/70
+                 backdrop-blur-md shadow-md hover:shadow-xl
+                 ring-1 ring-gray-200/50 hover:ring-2 hover:ring-gray-300/70
+                 transition-all duration-300 text-center flex flex-col items-center
+                 w-56 h-56 sm:w-60 sm:h-60 m-6"
+    >
+      {/* 🔹 اللوغو داخل المربع الكبير مباشرة */}
+      <div className="relative w-full h-full flex items-center justify-center overflow-hidden rounded-2xl">
+        <Image
+          src={c.logo}
+          alt={`${c.name} logo`}
+          fill
+          className="object-contain p-6 transition-transform duration-500 group-hover:scale-110"
+        />
+      </div>
 
-        {/* النص */}
-        <h2 className="mt-3 text-lg font-semibold tracking-tight text-gray-700">
-          {c.name}
-        </h2>
-      </motion.div>
-    </Link>
-  ))}
+      {/* 🔹 اسم الشركة */}
+      <h2 className="absolute bottom-4 text-lg font-semibold tracking-tight text-gray-700 bg-white/60 backdrop-blur-sm px-4 py-1 rounded-lg shadow-sm">
+        {c.name}
+      </h2>
+    </motion.div>
+  </Link>
+))}
 </motion.div>
     </div>
   );

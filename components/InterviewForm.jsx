@@ -14,18 +14,21 @@ export default function InterviewPage({company}) {
     { from: "", to: "", title: "", company: "", reason: "" },
   ]);
   const [startDate, setStartDate] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setLoading(true); // 🔥 بدأ التحميل
+  
     try {
-        const res = await fetch(`/api/interview/${company}`, {
+      const res = await fetch(`/api/interview/${company}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ...formData, company }),
       });
   
       if (res.ok) {
-        alert("✅ Data saved to MongoDB!");
+        alert("✅ Data saved successfully!");
         setFormData({
           applicationDate: "",
           fullName: "",
@@ -58,13 +61,12 @@ export default function InterviewPage({company}) {
             relatives: "",
             car: "",
             immigrantApp: "",
+            currency: "IQD", 
             expectedSalary: "",
             degrees: [{ from: "", to: "", school: "" }],
             jobs: [{ from: "", to: "", title: "", company: "", reason: "" }],
             references: [{ name: "", occupation: "", location: "", contact: "" }],
-            // ...
           },
-          
         });
       } else {
         alert("❌ Error saving data");
@@ -72,9 +74,10 @@ export default function InterviewPage({company}) {
     } catch (err) {
       console.error(err);
       alert("⚠️ Something went wrong");
+    } finally {
+      setLoading(false); // 🔥 إيقاف التحميل مهما كانت النتيجة
     }
   };
-  
 
   const rowAnim = {
     hidden: { opacity: 0, y: 10 },
@@ -771,10 +774,30 @@ export default function InterviewPage({company}) {
 
   {/* الراتب المتوقع يبقى input */}
   <label className="flex flex-col mb-2 font-medium text-gray-700">
-    Expected Salary / الراتب المتوقع
+  Expected Salary / الراتب المتوقع
+
+  <div className="flex gap-2 items-center">
+    
+    {/* اختيار العملة */}
+    <motion.select
+      className="border p-2 rounded-md w-32"
+      value={formData.otherInfo.currency}
+      onChange={(e) =>
+        setFormData({
+          ...formData,
+          otherInfo: { ...formData.otherInfo, currency: e.target.value },
+        })
+      }
+      {...focusAnim}
+    >
+      <option value="IQD">IQD</option>
+      <option value="USD">USD</option>
+    </motion.select>
+
+    {/* قيمة الراتب */}
     <motion.input
       type="text"
-      className="w-full border p-2 rounded-md"
+      className="flex-1 border p-2 rounded-md"
       value={
         formData.otherInfo.expectedSalary === ""
           ? ""
@@ -794,17 +817,26 @@ export default function InterviewPage({company}) {
       }}
       {...focusAnim}
     />
-  </label>
+  </div>
+</label>
 </section>
         {/* ================== Submit ================== */}
         <motion.button
-          type="submit"
-          className="w-full bg-gradient-to-r from-gray-700 via-gray-800 to-gray-900 text-white font-bold p-4 rounded-xl shadow-lg hover:opacity-90 transition"
-          whileHover={{ scale: 1.03 }}
-          whileTap={{ scale: 0.95 }}
-        >
-          Submit 
-        </motion.button>
+  type="submit"
+  disabled={loading}
+  className={`w-full bg-gradient-to-r from-gray-700 via-gray-800 to-gray-900 
+              text-white font-bold p-4 rounded-xl shadow-lg 
+              flex items-center justify-center gap-3 transition 
+              ${loading ? "opacity-70 cursor-not-allowed" : ""}`}
+  whileHover={!loading ? { scale: 1.03 } : {}}
+  whileTap={!loading ? { scale: 0.95 } : {}}
+>
+  {loading ? (
+    <div className="w-6 h-6 border-4 border-white border-t-transparent rounded-full animate-spin"></div>
+  ) : (
+    "Submit"
+  )}
+</motion.button>
       </motion.form>
     </motion.main>
   );

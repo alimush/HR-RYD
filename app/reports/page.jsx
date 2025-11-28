@@ -10,17 +10,17 @@ import {
   FaInfoCircle,
   FaCheckCircle,
   FaTimesCircle,
-  FaPrint
+  FaPrint,FaInbox, FaSearchMinus, FaClipboardList
 } from "react-icons/fa";
 import { motion, AnimatePresence } from "framer-motion";
 import Select from "react-select";
 import { useRouter } from "next/navigation";
-import generatePDF from "@/app/utils/generatePDF";
+
 import Image from "next/image";
 import PrintForm from "@/app/print/PrintForm";
 import { createRoot } from "react-dom/client";
 
-
+import generateApplicationPDF from "@/app/utils/generateApplicationPDF";
 
 export default function ReportsPage() {
   const [interviews, setInterviews] = useState([]);
@@ -35,6 +35,7 @@ export default function ReportsPage() {
   const [filterDateFrom, setFilterDateFrom] = useState("");
   const [filterDateTo, setFilterDateTo] = useState("");
   const [filterCompany, setFilterCompany] = useState(null);
+  const [loading, setLoading] = useState(true);
   useEffect(() => {
   if (typeof window !== "undefined") {
     const r = localStorage.getItem("role");
@@ -47,30 +48,29 @@ export default function ReportsPage() {
   }
 }, [router]);
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const r = localStorage.getItem("role");
-        if (!r) {
-          console.warn("⚠️ No role found for current user");
-          return;
-        }
-  
-        setRole(r); // 🟢 نخزن الشركة بالـ state
-  
-        // 🟢 نبعث role بالـ query للـ API
-        const res = await fetch(`/api/reports?role=${r}`);
-        const data = await res.json();
-        if (data.success) {
-          setInterviews(data.data);
-          setFiltered(data.data);
-        }
-      } catch (err) {
-        console.error("❌ Error fetching reports:", err);
+useEffect(() => {
+  const fetchData = async () => {
+    try {
+      const r = localStorage.getItem("role");
+      if (!r) return;
+
+      setRole(r);
+      const res = await fetch(`/api/reports?role=${r}`);
+      const data = await res.json();
+
+      if (data.success) {
+        setInterviews(data.data);
+        setFiltered(data.data);
       }
-    };
-    fetchData();
-  }, []);
+    } catch (err) {
+      console.error("❌ Error fetching reports:", err);
+    } finally {
+      setLoading(false); // 🟢 توقف اللودينغ بعد الانتهاء
+    }
+  };
+
+  fetchData();
+}, []);
   // تطبيق الفلاتر
   useEffect(() => {
     let result = [...interviews];
@@ -160,14 +160,20 @@ const companyLogos = {
 };
   return (
     <div className="p-6 min-h-screen bg-gray-100">
-    <h1 className="text-3xl font-bold mb-6">
-  📋 Job Applications Report{" "}
+ <h1 className="text-3xl font-bold mb-6 flex items-center gap-3 text-gray-800">
+  {/* Icon */}
+  <FaClipboardList className="text-gray-700 text-4xl" />
+
+  {/* Title */}
+  <span>Job Applications Report</span>
+
+  {/* Role Text */}
   {role && (
-    <span className="text-gray-600">
+    <span className="text-gray-600 text-xl mt-1">
       – {role === "admin" ? "All Companies" : role.toUpperCase()}
     </span>
   )}
-</h1> 
+</h1>
       {/* 🔎 الفلاتر */}
       <div className="bg-white shadow rounded-xl p-4 mb-6 flex flex-wrap gap-4 items-end">
       {/* {role === "admin" && (
@@ -254,55 +260,148 @@ const companyLogos = {
           Reset Filters
         </button>
       </div>
+      {loading ? (
+  // 🌀 Loader
+  <motion.div
+    className="flex flex-col items-center justify-center py-20 bg-white shadow-xl rounded-2xl border border-gray-200"
+    initial={{ opacity: 0 }}
+    animate={{ opacity: 1 }}
+  >
+    <div className="relative w-14 h-14 mb-5">
+      <div className="absolute inset-0 border-4 border-gray-300 rounded-full"></div>
+      <div className="absolute inset-0 border-4 border-t-gray-600 rounded-full animate-spin"></div>
+    </div>
+    <p className="text-gray-600 text-lg font-semibold tracking-wide">
+      Loading applications...
+    </p>
+  </motion.div>
+) : interviews.length === 0 ? (
+  // ❌ لا توجد بيانات
+  <motion.div
+    className="flex flex-col items-center justify-center py-20 bg-white rounded-2xl shadow-xl border border-gray-200 text-center"
+    initial={{ opacity: 0 }}
+    animate={{ opacity: 1 }}
+  >
+    <FaInbox className="text-gray-500 text-5xl mb-4" />
+    <p className="text-gray-700 text-2xl font-semibold">
+      لا توجد بيانات
+    </p>
+    <p className="text-gray-500 mt-2">
+      لم يتم العثور على أي طلبات لغاية الآن
+    </p>
+  </motion.div>
+) : filtered.length === 0 ? (
+  // ⚠️ الفلاتر ما جابت نتيجة
+  <motion.div
+    className="flex flex-col items-center justify-center py-20 bg-white rounded-2xl shadow-xl border border-gray-200 text-center"
+    initial={{ opacity: 0 }}
+    animate={{ opacity: 1 }}
+  >
+    <FaSearchMinus className="text-gray-500 text-5xl mb-4" />
+    <p className="text-gray-700 text-2xl font-semibold">
+      لا توجد نتائج مطابقة
+    </p>
+    <p className="text-gray-500 mt-2">
+      حاول تعديل الفلاتر للحصول على نتائج
+    </p>
+  </motion.div>
+) : (
+  // ✅ جدول البيانات
+  <motion.div
+    className="overflow-x-auto bg-white shadow-2xl rounded-2xl border border-gray-200"
+    initial={{ opacity: 0, y: 25 }}
+    animate={{ opacity: 1, y: 0 }}
+    transition={{ duration: 0.6, type: "spring", stiffness: 80 }}
+  >
+    <motion.table
+      className="w-full border-collapse text-gray-800"
+      initial="hidden"
+      animate="visible"
+      variants={{
+        visible: {
+          transition: { staggerChildren: 0.05 },
+        },
+      }}
+    >
+      <thead className="bg-gradient-to-r from-gray-50 via-gray-100 to-gray-200 text-gray-700 text-lg border-b border-gray-300">
+        <tr>
+          {[
+            "Application Date",
+            "Full Name",
+            "Gender",
+            "Position",
+            "Start Date",
+            "Marital Status",
+            "Kids",
+            "Address",
+            "Expected Salary",
+            "Currency",
+          ].map((head, i) => (
+            <th
+              key={i}
+              className="p-4 font-semibold text-left border-x border-gray-200 first:rounded-tl-2xl last:rounded-tr-2xl"
+            >
+              {head}
+            </th>
+          ))}
+        </tr>
+      </thead>
 
-      {/* جدول */}
-      <div className="overflow-x-auto bg-white shadow rounded-xl">
-        <table className="w-full border-collapse">
-          <thead className="bg-gray-200 text-gray-700 text-lg">
-            <tr>
-              <th className="p-3 border">Application Date</th>
-              <th className="p-3 border">Full Name</th>
-              <th className="p-3 border">Gender</th>
-              <th className="p-3 border">Position</th>
-              <th className="p-3 border">Start Date</th>
-              <th className="p-3 border">Marital Status</th>
-              <th className="p-3 border">Kids</th>
-              <th className="p-3 border">Address</th>
-              <th className="p-3 border">Expected Salary</th>
-            </tr>
-          </thead>
-          <tbody className="text-base">
-            {filtered.map((app) => (
-              <tr
-                key={app._id}
-                onClick={() => setSelected(app)}
-                className="cursor-pointer hover:bg-gray-100"
-              >
-                <td className="p-2 border">
-                  {app.applicationDate
-                    ? new Date(app.applicationDate).toLocaleDateString()
-                    : "-"}
-                </td>
-                <td className="p-2 border">{app.fullName || "-"}</td>
-                <td className="p-2 border">{app.gender || "-"}</td>
-                <td className="p-2 border">{app.position || "-"}</td>
-                <td className="p-2 border">
-  {app.startDate || "-"}
+      <motion.tbody
+        variants={{
+          hidden: {},
+          visible: {
+            transition: { staggerChildren: 0.04 },
+          },
+        }}
+        className="text-base divide-y divide-gray-100"
+      >
+        {filtered.map((app, index) => (
+          <motion.tr
+            key={app._id || index}
+            onClick={() => setSelected(app)}
+            className="cursor-pointer hover:bg-gray-50 transition-colors duration-200"
+            variants={{
+              hidden: { opacity: 0, y: 10 },
+              visible: { opacity: 1, y: 0 },
+            }}
+          >
+            <td className="p-4 border-x border-gray-100 text-gray-700">
+              {app.applicationDate
+                ? new Date(app.applicationDate).toLocaleDateString()
+                : "-"}
+            </td>
+            <td className="p-4 border-x border-gray-100 font-semibold text-gray-800">
+              {app.fullName || "-"}
+            </td>
+            <td className="p-4 border-x border-gray-100">{app.gender || "-"}</td>
+            <td className="p-4 border-x border-gray-100">{app.position || "-"}</td>
+            <td className="p-4 border-x border-gray-100">{app.startDate || "-"}</td>
+            <td className="p-4 border-x border-gray-100">{app.maritalStatus || "-"}</td>
+            <td className="p-4 border-x border-gray-100 text-center">{app.kids ?? "-"}</td>
+            <td className="p-4 border-x border-gray-100">{app.address || "-"}</td>
+            <td className="p-4 border-x border-gray-100 font-semibold text-gray-700 text-right">
+              {app.otherInfo?.expectedSalary
+                ? app.otherInfo.expectedSalary.toLocaleString()
+                : "-"}
+            </td>
+            <td className="p-4 border-x border-gray-100 font-semibold text-gray-700">
+  {app.otherInfo?.currency || "-"}
 </td>
-                <td className="p-2 border">{app.maritalStatus || "-"}</td>
-                <td className="p-2 border">{app.kids ?? "-"}</td>
-                <td className="p-2 border">{app.address || "-"}</td>
-                <td className="p-2 border">
-                  {app.otherInfo?.expectedSalary
-                    ? app.otherInfo.expectedSalary.toLocaleString()
-                    : "-"}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+          </motion.tr>
+        ))}
+      </motion.tbody>
+    </motion.table>
 
+    {/* 🧭 أسفل الجدول */}
+    <div className="p-4 bg-gray-50 border-t border-gray-200 text-gray-600 text-sm flex justify-between items-center rounded-b-2xl">
+      <span>
+        Showing <b>{filtered.length}</b> row
+      </span>
+      <span className="text-gray-400">Updated automatically</span>
+    </div>
+  </motion.div>
+)}
       {/* Popup */}
       <AnimatePresence>
         {selected && (
@@ -330,13 +429,14 @@ const companyLogos = {
               </button>
               <div className="absolute top-4 left-4 flex gap-2 no-print">
   {/* زر الطباعة */}
-  <button
+   <button
   onClick={handlePrint}
-  className="no-print flex items-center gap-2 bg-gradient-to-r from-blue-600 to-blue-800 text-white px-4 py-2 rounded-lg shadow-md hover:scale-105 hover:shadow-lg transition-transform duration-200"
+  className="no-print flex items-center gap-2 bg-gradient-to-r from-gray-600 via-gray-700 to-gray-800 text-white px-4 py-2 rounded-lg shadow-md hover:scale-105 hover:shadow-lg transition-transform duration-200"
 >
   <FaPrint className="text-white text-lg" />
   <span className="font-medium">Print</span>
-</button>
+</button> 
+
   {/* زر تحميل PDF */}
   {/* <button
     onClick={() =>
@@ -627,7 +727,10 @@ const companyLogos = {
   <b>Expected Salary:</b>{" "}
   {selected.otherInfo?.expectedSalary
     ? Number(selected.otherInfo.expectedSalary).toLocaleString()
-    : "-"}
+    : "-"}{" "}
+  <span className="text-gray-600">
+    {selected.otherInfo?.currency ? `${selected.otherInfo.currency}` : ""}
+  </span>
 </p>
                 </div>
               

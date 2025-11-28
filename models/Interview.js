@@ -69,6 +69,7 @@ const InterviewSchema = new mongoose.Schema(
       car: String,
       immigrantApp: String,
       expectedSalary: Number,
+      currency: String, 
     },
     companyKey: { type: String, required: true }, // 🟢 ضروري
   },
